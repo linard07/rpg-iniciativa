@@ -500,3 +500,6 @@ function sairDaMesa() {
   document.getElementById("tela-personagens").classList.add("escondido");
   document.getElementById("tela-inicial").classList.remove("escondido");
 }
+
+// *** CORREÇÃO PARA BOTÃO COMEÇAR COMBATE ***
+document.getElementById("btn-comecar-combate")?.addEventListener("click", iniciarCombate);

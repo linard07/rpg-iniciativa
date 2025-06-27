@@ -189,6 +189,9 @@
     <div id="painel-jogador">
       <p>Nenhum personagem selecionado.</p>
     </div>
+
+    <!-- Botão para iniciar combate para jogador -->
+    <button id="btn-comecar-combate" style="margin-top: 20px;">Iniciar Combate</button>
   </div>
 
   <!-- Controle do Mestre -->
@@ -214,7 +217,8 @@
 
     <button onclick="adicionarNPC()">Adicionar NPC</button>
 
-    <button onclick="iniciarCombate()">Iniciar Combate</button>
+    <!-- Botão do mestre com id para o JS -->
+    <button id="btn-comecar-combate" style="margin-top: 20px;">Iniciar Combate</button>
   </div>
 
   <button id="btn-sair" onclick="sairDaMesa()">Sair da mesa</button>
@@ -239,6 +243,16 @@
 </div>
 
 <script src="script.js"></script>
+
+<script>
+  // Evento para o botão "Iniciar Combate" funcionar tanto para mestre quanto para jogador,
+  // já que ambos têm o id btn-comecar-combate
+  // Precisamos colocar o event listener em ambos os botões.
+
+  document.querySelectorAll("#btn-comecar-combate").forEach(botao => {
+    botao.addEventListener("click", iniciarCombate);
+  });
+</script>
 
 </body>
 </html>
