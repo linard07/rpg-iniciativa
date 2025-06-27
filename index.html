@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPG Iniciativa</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Escolha de papel -->
+  <div id="tela-papel">
+    <h1>Escolha seu papel</h1>
+    <button onclick="escolherPapel('mestre')">Mestre</button>
+    <button onclick="escolherPapel('jogador')">Jogador</button>
+  </div>
+
+  <!-- Tela de login/cadastro -->
+  <div id="tela-login" class="escondido">
+    <h2>Cadastro de Personagem</h2>
+    <input type="text" id="nick" placeholder="Nick" required />
+    <input type="file" id="imagem" accept="image/*" />
+    <input type="number" id="hp" placeholder="HP" />
+    <input type="number" id="sanidade" placeholder="Sanidade" />
+    <input type="text" id="extra-label" placeholder="Nome da barra extra (ex: Mana)" />
+    <input type="number" id="extra-value" placeholder="Valor da barra extra" />
+    <button onclick="adicionarPersonagem()">Adicionar personagem</button>
+    <div id="lista-personagens"></div>
+    <button onclick="entrarJogo()">Entrar no jogo</button>
+  </div>
+
+  <!-- Tela do jogador -->
+  <div id="tela-jogador" class="tela escondido">
+    <h2>Bem-vindo, <span id="meuNick"></span></h2>
+    <div id="painel-status"></div>
+    <p id="espera-iniciativa">Aguardando o mestre pedir iniciativa...</p>
+    <div id="iniciativa-box" class="escondido">
+      <p>Digite sua iniciativa:</p>
+      <input type="number" id="valor-iniciativa" />
+      <button onclick="enviarIniciativa()">Enviar</button>
+    </div>
+    <div id="vez-jogador" class="escondido">
+      <h2>Sua vez!</h2>
+      <button onclick="terminarMinhaVez()">Terminar turno</button>
+    </div>
+  </div>
+
+  <!-- Tela do mestre -->
+  <div id="tela-mestre" class="tela escondido">
+    <h2>Controle do Mestre</h2>
+    <button onclick="mostrarFormularioNPC()">Adicionar NPC</button>
+    <div id="formulario-npc" class="escondido">
+      <input type="text" id="npc-nick" placeholder="Nome do NPC" />
+      <input type="number" id="npc-hp" placeholder="HP" />
+      <input type="number" id="npc-sanidade" placeholder="Sanidade" />
+      <input type="text" id="npc-extra-label" placeholder="Nome da barra extra" />
+      <input type="number" id="npc-extra-value" placeholder="Valor da barra extra" />
+      <button onclick="adicionarNPC()">Adicionar NPC</button>
+    </div>
+
+    <button onclick="pedirIniciativa()">Pedir iniciativa</button>
+
+    <div id="valores-recebidos" class="escondido">
+      <h2>Iniciativas recebidas</h2>
+      <ul id="lista-iniciativas"></ul>
+      <button onclick="iniciarCombate()">Iniciar combate</button>
+    </div>
+
+    <div id="combate" class="escondido">
+      <h2>Rodada: <span id="contador-rodadas">1</span></h2>
+      <h3>Ordem de turnos:</h3>
+      <div id="ordem-turnos"></div>
+      <div>
+        <button onclick="voltarTurno()">Voltar turno</button>
+        <button onclick="proximoTurno()">Terminar turno</button>
+        <button onclick="terminarCombate()">Terminar combate</button>
+      </div>
+
+      <h3>Log de Combate</h3>
+      <ul id="log-combate"></ul>
+
+      <h3>Histórico de turnos</h3>
+      <ul id="historico-turnos"></ul>
+    </div>
+  </div>
+
+  <!-- Botão sair da mesa -->
+  <button id="btn-sair" onclick="sairDaMesa()" class="escondido">Sair da mesa</button>
+
+  <script src="script.js"></script>
+</body>
+</html>
