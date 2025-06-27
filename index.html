@@ -1,91 +1,234 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RPG Iniciativa</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RPG Iniciativa</title>
+<style>
+  body {
+    font-family: sans-serif;
+    background-color: #121212;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+  }
+  input, button, select {
+    margin: 5px;
+    padding: 8px;
+    font-size: 14px;
+    background-color: #1c1c1c;
+    border: 1px solid #333;
+    color: white;
+    border-radius: 4px;
+  }
+  button {
+    cursor: pointer;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #444;
+  }
+  .tela {
+    margin-top: 20px;
+  }
+  .escondido {
+    display: none;
+  }
+  img.avatar {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid white;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  .personagem-card {
+    margin: 5px auto;
+    background-color: #222;
+    padding: 10px;
+    border-radius: 6px;
+    text-align: left;
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .personagem-info {
+    flex-grow: 1;
+  }
+  #ordem-turnos {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+  }
+  .turno-ativo {
+    border: 3px solid #ffd700;
+    padding: 10px;
+    border-radius: 10px;
+    background-color: rgba(255, 215, 0, 0.2);
+  }
+  #vez-jogador {
+    background-color: #3a3;
+    color: black;
+    padding: 10px;
+    font-weight: bold;
+    margin: 10px 0;
+    border-radius: 6px;
+  }
+  #btn-sair {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    background-color: #ff4b4b;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    z-index: 1000;
+    box-shadow: 0 0 8px rgba(255, 75, 75, 0.7);
+    transition: background-color 0.3s ease;
+  }
+  #btn-sair:hover {
+    background-color: #e04343;
+  }
+  label {
+    font-weight: bold;
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 4px;
+    text-align: left;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #lista-personagens-usuario, #lista-mesa-personagens {
+    max-width: 400px;
+    margin: 10px auto 20px auto;
+    text-align: left;
+  }
+  #historico-turnos {
+    max-width: 500px;
+    margin: 10px auto;
+    padding-left: 20px;
+    text-align: left;
+    list-style-type: decimal;
+  }
+  #historico-turnos li {
+    margin-bottom: 6px;
+  }
+</style>
 </head>
 <body>
-  <!-- Escolha de papel -->
-  <div id="tela-papel">
-    <h1>Escolha seu papel</h1>
-    <button onclick="escolherPapel('mestre')">Mestre</button>
-    <button onclick="escolherPapel('jogador')">Jogador</button>
-  </div>
 
-  <!-- Tela de login/cadastro -->
-  <div id="tela-login" class="escondido">
-    <h2>Cadastro de Personagem</h2>
-    <input type="text" id="nick" placeholder="Nick" required />
-    <input type="file" id="imagem" accept="image/*" />
-    <input type="number" id="hp" placeholder="HP" />
-    <input type="number" id="sanidade" placeholder="Sanidade" />
-    <input type="text" id="extra-label" placeholder="Nome da barra extra (ex: Mana)" />
-    <input type="number" id="extra-value" placeholder="Valor da barra extra" />
+<!-- Tela Inicial: Escolha papel e nick -->
+<div id="tela-inicial">
+  <h2>Bem-vindo ao RPG Iniciativa</h2>
+  <p>Escolha seu papel e digite seu nick:</p>
+
+  <label><input type="radio" name="papel" value="mestre" /> Mestre</label>
+  <label><input type="radio" name="papel" value="jogador" /> Jogador</label>
+
+  <label for="input-nick-inicial">Seu Nick:</label>
+  <input type="text" id="input-nick-inicial" placeholder="Digite seu nick" />
+
+  <button onclick="escolherPapelENick()">Entrar</button>
+</div>
+
+<!-- Tela de Gerenciamento de Personagens -->
+<div id="tela-personagens" class="escondido">
+  <h2>RPG Iniciativa - <span id="label-nick-atual"></span></h2>
+
+  <!-- Controle do Jogador -->
+  <div id="controle-jogador" class="escondido tela">
+    <h3>Seus Personagens</h3>
+    <div id="lista-personagens-usuario"></div>
+
+    <h3>Adicionar novo personagem</h3>
+    <label for="input-nome-personagem">Nome do personagem:</label>
+    <input type="text" id="input-nome-personagem" placeholder="Nome do personagem" />
+
+    <label for="input-hp">HP:</label>
+    <input type="number" id="input-hp" placeholder="100" />
+
+    <label for="input-sanidade">Sanidade:</label>
+    <input type="number" id="input-sanidade" placeholder="100" />
+
+    <label for="input-extra-label">Nome da barra extra (opcional):</label>
+    <input type="text" id="input-extra-label" placeholder="Ex: Mana, Energia" />
+
+    <label for="input-extra-value">Valor da barra extra:</label>
+    <input type="number" id="input-extra-value" placeholder="0" />
+
+    <label for="input-imagem-personagem">Imagem (opcional):</label>
+    <input type="file" id="input-imagem-personagem" accept="image/*" />
+
     <button onclick="adicionarPersonagem()">Adicionar personagem</button>
-    <div id="lista-personagens"></div>
-    <button onclick="entrarJogo()">Entrar no jogo</button>
-  </div>
 
-  <!-- Tela do jogador -->
-  <div id="tela-jogador" class="tela escondido">
-    <h2>Bem-vindo, <span id="meuNick"></span></h2>
-    <div id="painel-status"></div>
-    <p id="espera-iniciativa">Aguardando o mestre pedir iniciativa...</p>
-    <div id="iniciativa-box" class="escondido">
-      <p>Digite sua iniciativa:</p>
-      <input type="number" id="valor-iniciativa" />
-      <button onclick="enviarIniciativa()">Enviar</button>
-    </div>
-    <div id="vez-jogador" class="escondido">
-      <h2>Sua vez!</h2>
-      <button onclick="terminarMinhaVez()">Terminar turno</button>
+    <h3>Painel do personagem selecionado</h3>
+    <div id="painel-jogador">
+      <p>Nenhum personagem selecionado.</p>
     </div>
   </div>
 
-  <!-- Tela do mestre -->
-  <div id="tela-mestre" class="tela escondido">
-    <h2>Controle do Mestre</h2>
-    <button onclick="mostrarFormularioNPC()">Adicionar NPC</button>
-    <div id="formulario-npc" class="escondido">
-      <input type="text" id="npc-nick" placeholder="Nome do NPC" />
-      <input type="number" id="npc-hp" placeholder="HP" />
-      <input type="number" id="npc-sanidade" placeholder="Sanidade" />
-      <input type="text" id="npc-extra-label" placeholder="Nome da barra extra" />
-      <input type="number" id="npc-extra-value" placeholder="Valor da barra extra" />
-      <button onclick="adicionarNPC()">Adicionar NPC</button>
-    </div>
+  <!-- Controle do Mestre -->
+  <div id="controle-mestre" class="escondido tela">
+    <h3>Personagens na Mesa</h3>
+    <div id="lista-mesa-personagens"></div>
 
-    <button onclick="pedirIniciativa()">Pedir iniciativa</button>
+    <h3>Adicionar NPC</h3>
+    <label for="input-nome-npc">Nome do NPC:</label>
+    <input type="text" id="input-nome-npc" placeholder="Nome do NPC" />
 
-    <div id="valores-recebidos" class="escondido">
-      <h2>Iniciativas recebidas</h2>
-      <ul id="lista-iniciativas"></ul>
-      <button onclick="iniciarCombate()">Iniciar combate</button>
-    </div>
+    <label for="input-hp-npc">HP:</label>
+    <input type="number" id="input-hp-npc" placeholder="100" />
 
-    <div id="combate" class="escondido">
-      <h2>Rodada: <span id="contador-rodadas">1</span></h2>
-      <h3>Ordem de turnos:</h3>
-      <div id="ordem-turnos"></div>
-      <div>
-        <button onclick="voltarTurno()">Voltar turno</button>
-        <button onclick="proximoTurno()">Terminar turno</button>
-        <button onclick="terminarCombate()">Terminar combate</button>
-      </div>
+    <label for="input-sanidade-npc">Sanidade:</label>
+    <input type="number" id="input-sanidade-npc" placeholder="100" />
 
-      <h3>Log de Combate</h3>
-      <ul id="log-combate"></ul>
+    <label for="input-extra-label-npc">Nome da barra extra (opcional):</label>
+    <input type="text" id="input-extra-label-npc" placeholder="Ex: Mana, Energia" />
 
-      <h3>Histórico de turnos</h3>
-      <ul id="historico-turnos"></ul>
-    </div>
+    <label for="input-extra-value-npc">Valor da barra extra:</label>
+    <input type="number" id="input-extra-value-npc" placeholder="0" />
+
+    <button onclick="adicionarNPC()">Adicionar NPC</button>
+
+    <button onclick="iniciarCombate()">Iniciar Combate</button>
   </div>
 
-  <!-- Botão sair da mesa -->
-  <button id="btn-sair" onclick="sairDaMesa()" class="escondido">Sair da mesa</button>
+  <button id="btn-sair" onclick="sairDaMesa()">Sair da mesa</button>
+</div>
 
-  <script src="script.js"></script>
+<!-- Tela de Combate -->
+<div id="tela-combate" class="escondido tela">
+  <h2>Combate - Rodada <span id="contador-rodadas">1</span></h2>
+
+  <div id="ordem-turnos"></div>
+
+  <h3>Histórico de turnos</h3>
+  <ul id="historico-turnos"></ul>
+
+  <div id="vez-jogador" class="escondido">
+    <p>Sua vez! Termine seu turno.</p>
+    <button onclick="terminarMinhaVez()">Terminar meu turno</button>
+  </div>
+
+  <button onclick="proximoTurno()">Próximo turno</button>
+  <button onclick="terminarCombate()">Terminar combate</button>
+</div>
+
+<script src="script.js"></script>
+
 </body>
 </html>

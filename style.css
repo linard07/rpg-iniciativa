@@ -11,10 +11,29 @@ input, button, select {
   margin: 5px;
   padding: 8px;
   font-size: 14px;
+  background-color: #1c1c1c;
+  border: 1px solid #333;
+  color: white;
+  border-radius: 4px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 300px;
 }
 
 button {
   cursor: pointer;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  transition: background-color 0.3s ease;
+  width: auto;
+  max-width: none;
+}
+
+button:hover {
+  background-color: #444;
 }
 
 .tela {
@@ -29,8 +48,28 @@ img.avatar {
   width: 50px;
   height: 50px;
   object-fit: cover;
-  border-radius: 50%;
+  border-radius: 8px;
   border: 2px solid white;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+.personagem-card {
+  margin: 5px auto;
+  background-color: #222;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: left;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.personagem-info {
+  flex-grow: 1;
+  color: white;
 }
 
 #ordem-turnos {
@@ -42,14 +81,22 @@ img.avatar {
 }
 
 .turno-ativo {
-  border: 3px solid yellow;
-  padding: 5px;
+  border: 3px solid #ffd700;
+  padding: 10px;
   border-radius: 10px;
-  background-color: rgba(255, 255, 0, 0.1);
+  background-color: rgba(255, 215, 0, 0.2);
 }
 
-.personagem-card {
-  margin: 5px;
+#vez-jogador {
+  background-color: #3a3;
+  color: black;
+  padding: 10px;
+  font-weight: bold;
+  margin: 10px 0;
+  border-radius: 6px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 #btn-sair {
@@ -72,58 +119,31 @@ img.avatar {
   background-color: #e04343;
 }
 
-.buff {
-  font-size: 12px;
-  background-color: rgba(0, 128, 255, 0.2);
-  padding: 3px 6px;
-  border-radius: 5px;
-  margin-top: 4px;
-}
-
-#log-combate {
-  max-height: 200px;
-  overflow-y: auto;
+label {
+  font-weight: bold;
+  display: block;
+  margin-top: 10px;
+  margin-bottom: 4px;
   text-align: left;
-  margin: 0 auto;
-  padding: 10px;
-  border: 1px solid #333;
-  background-color: #1e1e1e;
-  width: 80%;
-  border-radius: 8px;
-  list-style: none;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-#log-combate li {
-  margin: 4px 0;
-  padding-left: 10px;
-  position: relative;
+#lista-personagens-usuario, #lista-mesa-personagens {
+  max-width: 400px;
+  margin: 10px auto 20px auto;
+  text-align: left;
 }
 
-#log-combate li::before {
-  content: '\2022';
-  color: #ccc;
-  position: absolute;
-  left: 0;
+#historico-turnos {
+  max-width: 500px;
+  margin: 10px auto;
+  padding-left: 20px;
+  text-align: left;
+  list-style-type: decimal;
 }
 
-input[type="text"], input[type="number"] {
-  background-color: #1c1c1c;
-  border: 1px solid #333;
-  color: white;
-}
-
-input[type="file"] {
-  color: white;
-}
-
-button {
-  background-color: #333;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-}
-
-button:hover {
-  background-color: #444;
+#historico-turnos li {
+  margin-bottom: 6px;
 }
