@@ -1,505 +1,327 @@
-// Variáveis globais
-let papel = null; // 'mestre' ou 'jogador'
-let nick = null;  // nick do jogador
-let personagensPorNick = {}; // objeto com arrays de personagens por nick
-let personagensMesa = []; // personagens presentes na mesa (jogadores + NPCs)
-let ordemTurnos = [];
-let turnoAtual = 0;
-let rodada = 1;
-let historico = [];
+// Import Firebase pelo CDN (modular SDK 9)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc, query, where, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-// Para controle de seleção de personagem do jogador
-let personagemSelecionadoIndex = null;
+// CONFIGURAÇÃO FIREBASE - substitua pelos seus dados do console Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDsBKVNeE0JDTG0sjQVqkevYA67dTd4OYY",
+  authDomain: "pg-iniciativa.firebaseapp.com",
+  projectId: "pg-iniciativa",
+  storageBucket: "pg-iniciativa.firebasestorage.app",
+  messagingSenderId: "919106968054",
+  appId: "1:919106968054:web:0c39fd1fdf087bf0ed4fd7",
+  measurementId: "G-5QJ0FK7Y59"
+};
 
-// Função inicial: escolhe papel e nick
-function escolherPapelENick() {
-  const radios = document.getElementsByName("papel");
-  let papelSelecionado = null;
-  for (const r of radios) {
-    if (r.checked) {
-      papelSelecionado = r.value;
-      break;
-    }
-  }
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  const nickInput = document.getElementById("input-nick-inicial").value.trim();
-  if (!papelSelecionado) {
-    alert("Escolha um papel: Mestre ou Jogador.");
+// ELEMENTOS HTML
+const telaInicial = document.getElementById('tela-inicial');
+const telaPersonagens = document.getElementById('tela-personagens');
+const telaCombate = document.getElementById('tela-combate');
+
+const labelNickAtual = document.getElementById('label-nick-atual');
+
+const controleJogador = document.getElementById('controle-jogador');
+const controleMestre = document.getElementById('controle-mestre');
+
+const listaPersonagensUsuario = document.getElementById('lista-personagens-usuario');
+const listaMesaPersonagens = document.getElementById('lista-mesa-personagens');
+
+const inputNickInicial = document.getElementById('input-nick-inicial');
+
+const btnComecarCombateJogador = controleJogador.querySelector('#btn-comecar-combate');
+const btnComecarCombateMestre = controleMestre.querySelector('#btn-comecar-combate');
+
+const btnSair = document.getElementById('btn-sair');
+
+const ordemTurnos = document.getElementById('ordem-turnos');
+const historicoTurnos = document.getElementById('historico-turnos');
+const contadorRodadas = document.getElementById('contador-rodadas');
+
+const vezJogador = document.getElementById('vez-jogador');
+
+// VARIÁVEIS DE CONTROLE
+let usuario = null; // { papel: 'mestre' | 'jogador', nick: string }
+let personagensUsuario = []; // Personagens do jogador logado
+let personagensMesa = [];   // Personagens da mesa (todos)
+let turnoAtualIndex = 0;
+let rodadaAtual = 1;
+let emCombate = false;
+
+// Função para iniciar com papel e nick
+window.escolherPapelENick = async function() {
+  const papelRadio = document.querySelector('input[name="papel"]:checked');
+  const nick = inputNickInicial.value.trim();
+
+  if (!papelRadio) {
+    alert('Selecione um papel: Mestre ou Jogador.');
     return;
   }
-  if (!nickInput) {
-    alert("Digite seu nick.");
+  if (!nick) {
+    alert('Digite seu nick.');
     return;
   }
 
-  papel = papelSelecionado;
-  nick = nickInput;
+  usuario = { papel: papelRadio.value, nick };
 
-  if (!personagensPorNick[nick]) {
-    personagensPorNick[nick] = [];
-  }
+  labelNickAtual.textContent = `${usuario.nick} (${usuario.papel})`;
 
-  document.getElementById("tela-inicial").classList.add("escondido");
-  document.getElementById("tela-personagens").classList.remove("escondido");
-  document.getElementById("label-nick-atual").textContent = nick;
+  telaInicial.classList.add('escondido');
+  telaPersonagens.classList.remove('escondido');
 
-  if (papel === "mestre") {
-    document.getElementById("controle-mestre").classList.remove("escondido");
-    document.getElementById("controle-jogador").classList.add("escondido");
-    atualizarListaMesa();
+  if (usuario.papel === 'jogador') {
+    controleJogador.classList.remove('escondido');
+    controleMestre.classList.add('escondido');
+    escutarPersonagensUsuario();
   } else {
-    document.getElementById("controle-jogador").classList.remove("escondido");
-    document.getElementById("controle-mestre").classList.add("escondido");
-    atualizarListaPersonagensUsuario();
-    mostrarPainelPersonagem(null);
+    controleMestre.classList.remove('escondido');
+    controleJogador.classList.add('escondido');
+    escutarPersonagensMesa();
   }
-}
+};
 
-// Adicionar personagem do jogador
-function adicionarPersonagem() {
-  const nome = document.getElementById("input-nome-personagem").value.trim();
-  if (!nome) {
-    alert("Nome do personagem é obrigatório.");
-    return;
-  }
-  const hp = parseInt(document.getElementById("input-hp").value);
-  const sanidade = parseInt(document.getElementById("input-sanidade").value);
-  const extraLabel = document.getElementById("input-extra-label").value.trim();
-  const extraValue = parseInt(document.getElementById("input-extra-value").value);
-  const fileInput = document.getElementById("input-imagem-personagem");
-  const file = fileInput.files[0];
+// ======= FUNÇÕES FIRESTORE =======
 
-  const personagem = {
-    nomePersonagem: nome,
-    hp: isNaN(hp) ? 100 : hp,
-    sanidade: isNaN(sanidade) ? 100 : sanidade,
-    extra: extraLabel ? { label: extraLabel, value: isNaN(extraValue) ? 0 : extraValue } : null,
-    imagem: null
-  };
+// Coleção personagens
+const personagensCol = collection(db, 'personagens');
 
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      personagem.imagem = reader.result;
-      personagensPorNick[nick].push(personagem);
-      atualizarListaPersonagensUsuario();
-      limparFormularioPersonagem();
-    };
-    reader.readAsDataURL(file);
-  } else {
-    personagensPorNick[nick].push(personagem);
-    atualizarListaPersonagensUsuario();
-    limparFormularioPersonagem();
-  }
-}
-
-function limparFormularioPersonagem() {
-  document.getElementById("input-nome-personagem").value = "";
-  document.getElementById("input-hp").value = "";
-  document.getElementById("input-sanidade").value = "";
-  document.getElementById("input-extra-label").value = "";
-  document.getElementById("input-extra-value").value = "";
-  document.getElementById("input-imagem-personagem").value = "";
-}
-
-function atualizarListaPersonagensUsuario() {
-  const container = document.getElementById("lista-personagens-usuario");
-  container.innerHTML = "";
-  const lista = personagensPorNick[nick];
-
-  if (!lista || lista.length === 0) {
-    container.textContent = "Nenhum personagem adicionado ainda.";
-    mostrarPainelPersonagem(null);
-    return;
-  }
-
-  lista.forEach((p, idx) => {
-    const div = document.createElement("div");
-    div.className = "personagem-card";
-
-    div.innerHTML = `
-      ${p.imagem ? `<img src="${p.imagem}" class="avatar" alt="Avatar do personagem" />` : ""}
-      <div class="personagem-info">
-        <strong>${p.nomePersonagem}</strong><br/>
-        HP: ${p.hp}<br/>
-        Sanidade: ${p.sanidade}<br/>
-        ${p.extra ? `${p.extra.label}: ${p.extra.value}` : ""}
-      </div>
-      <div>
-        <button onclick="selecionarPersonagem(${idx})">Selecionar</button>
-        <button onclick="removerPersonagemUsuario(${idx})">Remover</button>
-      </div>
-    `;
-    container.appendChild(div);
+// Escutar personagens do usuário (jogador)
+function escutarPersonagensUsuario() {
+  const q = query(personagensCol, where('proprietario', '==', usuario.nick));
+  onSnapshot(q, (snapshot) => {
+    personagensUsuario = [];
+    snapshot.forEach(docSnap => {
+      personagensUsuario.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    renderizarPersonagensUsuario();
   });
 }
 
-// Selecionar personagem para ver/editar no painel
-function selecionarPersonagem(idx) {
-  personagemSelecionadoIndex = idx;
-  const p = personagensPorNick[nick][idx];
-  mostrarPainelPersonagem(p);
+// Escutar todos personagens da mesa (mestre)
+function escutarPersonagensMesa() {
+  onSnapshot(personagensCol, (snapshot) => {
+    personagensMesa = [];
+    snapshot.forEach(docSnap => {
+      personagensMesa.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    renderizarPersonagensMesa();
+  });
 }
 
-function mostrarPainelPersonagem(p) {
-  const painel = document.getElementById("painel-jogador");
-  if (!p) {
-    painel.innerHTML = "<p>Nenhum personagem selecionado.</p>";
-    return;
-  }
+// Criar personagem (jogador)
+async function criarPersonagemUsuario(nome, hp, sanidade, extraLabel, extraValue) {
+  if (!nome) return alert('Digite o nome do personagem.');
+  const novoPersonagem = {
+    nome,
+    hp: Number(hp) || 100,
+    sanidade: Number(sanidade) || 100,
+    extraLabel: extraLabel || '',
+    extraValue: Number(extraValue) || 0,
+    proprietario: usuario.nick,
+    mestre: false,
+    ordemIniciativa: 0
+  };
 
-  painel.innerHTML = `
-    ${p.imagem ? `<img src="${p.imagem}" class="avatar" alt="Avatar do personagem" />` : ""}
-    <p><strong>${p.nomePersonagem}</strong></p>
-    <label>HP: <input type="number" id="painel-hp" value="${p.hp}" onchange="atualizarPersonagemSelecionado('hp', this.value)" /></label>
-    <label>Sanidade: <input type="number" id="painel-sanidade" value="${p.sanidade}" onchange="atualizarPersonagemSelecionado('sanidade', this.value)" /></label>
-    <label>${p.extra ? p.extra.label : 'Barra extra:'} <input type="number" id="painel-extra" value="${p.extra ? p.extra.value : 0}" onchange="atualizarPersonagemSelecionado('extra', this.value)" /></label>
-  `;
+  await addDoc(personagensCol, novoPersonagem);
 }
 
-function atualizarPersonagemSelecionado(campo, valor) {
-  if (personagemSelecionadoIndex === null) return;
-  const personagem = personagensPorNick[nick][personagemSelecionadoIndex];
-  if (!personagem) return;
+// Criar NPC (mestre)
+window.adicionarNPC = async function() {
+  const nome = document.getElementById('input-nome-npc').value.trim();
+  const hp = Number(document.getElementById('input-hp-npc').value);
+  const sanidade = Number(document.getElementById('input-sanidade-npc').value);
+  const extraLabel = document.getElementById('input-extra-label-npc').value.trim();
+  const extraValue = Number(document.getElementById('input-extra-value-npc').value);
 
-  const num = parseInt(valor);
-  if (isNaN(num)) return;
-
-  if (campo === "hp") personagem.hp = num;
-  else if (campo === "sanidade") personagem.sanidade = num;
-  else if (campo === "extra") {
-    if (!personagem.extra) personagem.extra = { label: "Barra extra", value: 0 };
-    personagem.extra.value = num;
-  }
-
-  atualizarListaPersonagensUsuario();
-  mostrarPainelPersonagem(personagem);
-}
-
-function removerPersonagemUsuario(idx) {
-  if (!confirm("Remover este personagem?")) return;
-  personagensPorNick[nick].splice(idx, 1);
-  if (personagemSelecionadoIndex === idx) personagemSelecionadoIndex = null;
-  atualizarListaPersonagensUsuario();
-  mostrarPainelPersonagem(null);
-}
-
-// Mestre adiciona NPC na mesa
-function adicionarNPC() {
-  const nome = document.getElementById("input-nome-npc").value.trim();
-  if (!nome) {
-    alert("Nome do NPC é obrigatório.");
-    return;
-  }
-  const hp = parseInt(document.getElementById("input-hp-npc").value);
-  const sanidade = parseInt(document.getElementById("input-sanidade-npc").value);
-  const extraLabel = document.getElementById("input-extra-label-npc").value.trim();
-  const extraValue = parseInt(document.getElementById("input-extra-value-npc").value);
+  if (!nome) return alert('Digite o nome do NPC');
 
   const npc = {
-    nick: "MESTRE",
-    nomePersonagem: nome,
-    hp: isNaN(hp) ? 100 : hp,
-    sanidade: isNaN(sanidade) ? 100 : sanidade,
-    extra: extraLabel ? { label: extraLabel, value: isNaN(extraValue) ? 0 : extraValue } : null,
-    imagem: null,
-    valor: null
+    nome,
+    hp: hp || 100,
+    sanidade: sanidade || 100,
+    extraLabel: extraLabel || '',
+    extraValue: extraValue || 0,
+    proprietario: 'mestre',
+    mestre: true,
+    ordemIniciativa: 0
   };
 
-  personagensMesa.push(npc);
-  atualizarListaMesa();
-  limparFormularioNPC();
-}
+  await addDoc(personagensCol, npc);
 
-function limparFormularioNPC() {
-  document.getElementById("input-nome-npc").value = "";
-  document.getElementById("input-hp-npc").value = "";
-  document.getElementById("input-sanidade-npc").value = "";
-  document.getElementById("input-extra-label-npc").value = "";
-  document.getElementById("input-extra-value-npc").value = "";
-}
+  // Limpar inputs
+  document.getElementById('input-nome-npc').value = '';
+  document.getElementById('input-hp-npc').value = '';
+  document.getElementById('input-sanidade-npc').value = '';
+  document.getElementById('input-extra-label-npc').value = '';
+  document.getElementById('input-extra-value-npc').value = '';
+};
 
-// Atualiza lista da mesa (mestre)
-function atualizarListaMesa() {
-  const container = document.getElementById("lista-mesa-personagens");
-  container.innerHTML = "";
-  if (personagensMesa.length === 0) {
-    container.textContent = "Nenhum personagem na mesa.";
+// Renderizar lista personagens jogador
+function renderizarPersonagensUsuario() {
+  listaPersonagensUsuario.innerHTML = '';
+  if (personagensUsuario.length === 0) {
+    listaPersonagensUsuario.innerHTML = '<p>Você não tem personagens cadastrados.</p>';
     return;
   }
 
-  personagensMesa.forEach((p, idx) => {
-    const div = document.createElement("div");
-    div.className = "personagem-card";
-    div.innerHTML = `
-      ${p.imagem ? `<img src="${p.imagem}" class="avatar" alt="Avatar do personagem" />` : ""}
-      <div class="personagem-info">
-        <strong>${p.nomePersonagem}</strong><br/>
-        (Jogador: ${p.nick})<br/>
-        HP: ${p.hp}<br/>
-        Sanidade: ${p.sanidade}<br/>
-        ${p.extra ? `${p.extra.label}: ${p.extra.value}` : ""}
-        <br/>Iniciativa: ${p.valor !== null ? p.valor : '-'}
-      </div>
-      <div>
-        <button onclick="removerPersonagemMesa(${idx})">Remover</button>
-      </div>
-    `;
-    container.appendChild(div);
+  personagensUsuario.forEach(p => {
+    const div = document.createElement('div');
+    div.textContent = `${p.nome} - HP: ${p.hp} - Sanidade: ${p.sanidade}` + (p.extraLabel ? ` - ${p.extraLabel}: ${p.extraValue}` : '');
+    listaPersonagensUsuario.appendChild(div);
   });
 }
 
-function removerPersonagemMesa(idx) {
-  if (!confirm("Remover este personagem da mesa?")) return;
-  personagensMesa.splice(idx, 1);
-  atualizarListaMesa();
-}
-
-// Função para o mestre pedir iniciativa dos NPCs, e jogadores colocarem a iniciativa deles no seu momento
-async function iniciarCombate() {
-  turnoAtual = 0;
-  rodada = 1;
-  historico = [];
-
-  if (papel === "mestre") {
-    // Pega os NPCs atuais na mesa
-    const npcsAtuais = personagensMesa.filter(p => p.nick === "MESTRE");
-
-    personagensMesa = [];
-
-    // Mestre digita iniciativa para cada NPC
-    for (let npc of npcsAtuais) {
-      let iniStr = prompt(`Informe a iniciativa para NPC ${npc.nomePersonagem} (mestre):`, "0");
-      let iniVal = parseInt(iniStr);
-      npc.valor = isNaN(iniVal) ? 0 : iniVal;
-      personagensMesa.push(npc);
-    }
-
-    // Adiciona personagens de todos os jogadores, com iniciativa null para que eles insiram depois
-    for (const jogador in personagensPorNick) {
-      personagensPorNick[jogador].forEach(p => {
-        personagensMesa.push({
-          nick: jogador,
-          nomePersonagem: p.nomePersonagem,
-          hp: p.hp,
-          sanidade: p.sanidade,
-          extra: p.extra ? {...p.extra} : null,
-          imagem: p.imagem,
-          valor: null
-        });
-      });
-    }
-
-    alert("Mestre inseriu iniciativas dos NPCs.\nAgora cada jogador deve iniciar o combate para inserir as iniciativas dos seus personagens.");
-
-  } else {
-    // Jogador
-    if (!personagensPorNick[nick] || personagensPorNick[nick].length === 0) {
-      alert("Você precisa adicionar pelo menos um personagem para entrar no combate.");
-      return;
-    }
-
-    // Mantém NPCs do mestre na mesa (se já estiverem)
-    personagensMesa = personagensMesa.filter(p => p.nick === "MESTRE");
-
-    // Adiciona personagens do jogador com iniciativa null (se ainda não estiverem)
-    personagensPorNick[nick].forEach(p => {
-      // Se o personagem já está na mesa com iniciativa, mantém
-      const existe = personagensMesa.find(pm => pm.nick === nick && pm.nomePersonagem === p.nomePersonagem);
-      if (!existe) {
-        personagensMesa.push({
-          nick,
-          nomePersonagem: p.nomePersonagem,
-          hp: p.hp,
-          sanidade: p.sanidade,
-          extra: p.extra ? {...p.extra} : null,
-          imagem: p.imagem,
-          valor: null
-        });
-      }
-    });
-
-    // Pede iniciativa para cada personagem do jogador que não tenha iniciativa
-    for (let p of personagensMesa) {
-      if (p.nick === nick && p.valor === null) {
-        let iniStr = prompt(`Informe a iniciativa para seu personagem ${p.nomePersonagem}:`, "0");
-        let iniVal = parseInt(iniStr);
-        p.valor = isNaN(iniVal) ? 0 : iniVal;
-      }
-    }
-
-    alert("Iniciativas enviadas! Aguarde o mestre iniciar o combate.");
+// Renderizar lista personagens mesa (mestre)
+function renderizarPersonagensMesa() {
+  listaMesaPersonagens.innerHTML = '';
+  if (personagensMesa.length === 0) {
+    listaMesaPersonagens.innerHTML = '<p>Nenhum personagem na mesa.</p>';
+    return;
   }
 
-  atualizarListaMesa();
-  ordenarOrdemTurnos();
-  atualizarOrdemTurnosUI();
+  personagensMesa.forEach(p => {
+    const div = document.createElement('div');
+    div.textContent = `${p.nome} (Proprietário: ${p.proprietario}) - HP: ${p.hp} - Sanidade: ${p.sanidade}` + (p.extraLabel ? ` - ${p.extraLabel}: ${p.extraValue}` : '');
 
-  document.getElementById("tela-personagens").classList.add("escondido");
-  document.getElementById("tela-combate").classList.remove("escondido");
-}
+    // Botão remover (só mestre pode)
+    const btnRemover = document.createElement('button');
+    btnRemover.textContent = 'Remover';
+    btnRemover.style.marginLeft = '10px';
+    btnRemover.onclick = () => {
+      if (confirm(`Remover personagem ${p.nome}?`)) {
+        deleteDoc(doc(db, 'personagens', p.id));
+      }
+    };
 
-// Ordena ordemTurnos pelo valor da iniciativa do maior para o menor
-function ordenarOrdemTurnos() {
-  ordemTurnos = personagensMesa.filter(p => p.valor !== null);
-  ordemTurnos.sort((a, b) => b.valor - a.valor);
-}
-
-// Atualiza a UI da ordem de turnos
-function atualizarOrdemTurnosUI() {
-  const container = document.getElementById("ordem-turnos");
-  container.innerHTML = "";
-
-  ordemTurnos.forEach((p, idx) => {
-    const div = document.createElement("div");
-    div.className = (idx === turnoAtual) ? "turno-ativo personagem-card" : "personagem-card";
-    div.innerHTML = `
-      ${p.imagem ? `<img src="${p.imagem}" class="avatar" alt="Avatar do personagem" />` : ""}
-      <div class="personagem-info">
-        <strong>${p.nomePersonagem}</strong><br/>
-        (Jogador: ${p.nick})<br/>
-        HP: ${p.hp}<br/>
-        Sanidade: ${p.sanidade}<br/>
-        ${p.extra ? `${p.extra.label}: ${p.extra.value}` : ""}
-        <br/>Iniciativa: ${p.valor}
-      </div>
-      <div>
-        <button onclick="aplicarDano(${idx})">Dano</button>
-      </div>
-    `;
-    container.appendChild(div);
+    div.appendChild(btnRemover);
+    listaMesaPersonagens.appendChild(div);
   });
-
-  atualizarHistoricoUI();
-  mostrarVezJogador();
 }
 
-function aplicarDano(idx) {
-  const danoStr = prompt("Digite o dano:");
-  const dano = parseInt(danoStr);
-  if (isNaN(dano) || dano < 0) return alert("Valor inválido!");
+// Função para jogador criar personagem pelo formulário (controle jogador)
+document.getElementById('input-nome-personagem').closest('div').querySelector('button')?.addEventListener('click', () => {});
 
-  ordemTurnos[idx].hp = Math.max(0, ordemTurnos[idx].hp - dano);
-  atualizarOrdemTurnosUI();
-}
+// Como você não pediu, vou ativar botão para criar personagem:
 
-function proximoTurno() {
-  if (ordemTurnos.length === 0) return;
-
-  historico.push(ordemTurnos[turnoAtual].nomePersonagem);
-  turnoAtual++;
-  if (turnoAtual >= ordemTurnos.length) {
-    turnoAtual = 0;
-    rodada++;
-    document.getElementById("contador-rodadas").textContent = rodada;
+// O botão de criar personagem do jogador (pode criar uma função para chamar)
+btnComecarCombateJogador.addEventListener('click', () => {
+  if (personagensUsuario.length === 0) {
+    alert('Crie pelo menos um personagem antes de iniciar o combate.');
+    return;
   }
-  atualizarOrdemTurnosUI();
+  iniciarCombate();
+});
+
+btnComecarCombateMestre.addEventListener('click', () => {
+  if (personagensMesa.length === 0) {
+    alert('Adicione personagens (NPCs) antes de iniciar o combate.');
+    return;
+  }
+  iniciarCombate();
+});
+
+// Função para iniciar combate
+function iniciarCombate() {
+  emCombate = true;
+  telaPersonagens.classList.add('escondido');
+  telaCombate.classList.remove('escondido');
+  turnoAtualIndex = 0;
+  rodadaAtual = 1;
+  contadorRodadas.textContent = rodadaAtual;
+
+  // Ordem dos turnos pode ser definida aqui - por enquanto ordem do array
+  personagensMesa = personagensMesa.sort((a,b) => b.ordemIniciativa - a.ordemIniciativa);
+
+  atualizarOrdemTurnos();
+  historicoTurnos.innerHTML = '';
+  mostrarTurnoAtual();
 }
 
-function terminarMinhaVez() {
-  document.getElementById("vez-jogador").classList.add("escondido");
+// Atualizar visual da ordem dos turnos
+function atualizarOrdemTurnos() {
+  ordemTurnos.innerHTML = '';
+  personagensMesa.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.textContent = `${i+1}. ${p.nome} - HP: ${p.hp} - Sanidade: ${p.sanidade}`;
+    if(i === turnoAtualIndex) {
+      div.style.fontWeight = 'bold';
+      div.style.color = 'yellow';
+    }
+    ordemTurnos.appendChild(div);
+  });
+}
+
+// Mostrar informações do turno atual
+function mostrarTurnoAtual() {
+  const personagem = personagensMesa[turnoAtualIndex];
+  vezJogador.classList.toggle('escondido', personagem.proprietario !== usuario.nick);
+}
+
+// Avançar para o próximo turno
+window.proximoTurno = function() {
+  if(!emCombate) return;
+
+  const personagemAtual = personagensMesa[turnoAtualIndex];
+  historicoTurnos.innerHTML += `<li>Turno de ${personagemAtual.nome} finalizado.</li>`;
+
+  turnoAtualIndex++;
+  if (turnoAtualIndex >= personagensMesa.length) {
+    turnoAtualIndex = 0;
+    rodadaAtual++;
+    contadorRodadas.textContent = rodadaAtual;
+    historicoTurnos.innerHTML += `<li>=== Rodada ${rodadaAtual} ===</li>`;
+  }
+
+  atualizarOrdemTurnos();
+  mostrarTurnoAtual();
+}
+
+// Jogador termina sua vez (botão)
+window.terminarMinhaVez = function() {
   proximoTurno();
 }
 
-function mostrarVezJogador() {
-  const atual = ordemTurnos[turnoAtual];
-  if (!atual) {
-    document.getElementById("vez-jogador").classList.add("escondido");
-    return;
+// Terminar combate
+window.terminarCombate = function() {
+  if (!emCombate) return;
+
+  emCombate = false;
+  telaCombate.classList.add('escondido');
+  telaPersonagens.classList.remove('escondido');
+  // Atualiza listas etc se precisar
+};
+
+// Sair da mesa (voltar à tela inicial)
+window.sairDaMesa = function() {
+  if(confirm('Deseja sair da mesa?')) {
+    usuario = null;
+    personagensUsuario = [];
+    personagensMesa = [];
+    telaPersonagens.classList.add('escondido');
+    telaCombate.classList.add('escondido');
+    telaInicial.classList.remove('escondido');
+    inputNickInicial.value = '';
+    controleJogador.classList.add('escondido');
+    controleMestre.classList.add('escondido');
   }
+};
 
-  if (papel === "jogador" && atual.nick === nick) {
-    document.getElementById("vez-jogador").classList.remove("escondido");
-  } else {
-    document.getElementById("vez-jogador").classList.add("escondido");
+// Criação manual de personagem jogador (exemplo simples - você pode melhorar a UI)
+document.getElementById('input-nome-personagem').addEventListener('change', async () => {
+  const nome = document.getElementById('input-nome-personagem').value.trim();
+  const hp = document.getElementById('input-hp').value;
+  const sanidade = document.getElementById('input-sanidade').value;
+  const extraLabel = document.getElementById('input-extra-label').value;
+  const extraValue = document.getElementById('input-extra-value').value;
+
+  if (nome) {
+    await criarPersonagemUsuario(nome, hp, sanidade, extraLabel, extraValue);
+    document.getElementById('input-nome-personagem').value = '';
+    document.getElementById('input-hp').value = '';
+    document.getElementById('input-sanidade').value = '';
+    document.getElementById('input-extra-label').value = '';
+    document.getElementById('input-extra-value').value = '';
   }
-}
-
-function atualizarHistoricoUI() {
-  const ul = document.getElementById("historico-turnos");
-  ul.innerHTML = "";
-  historico.forEach((nomePersonagem, i) => {
-    const li = document.createElement("li");
-    li.textContent = `${i + 1}º - ${nomePersonagem}`;
-    ul.appendChild(li);
-  });
-}
-
-// Termina combate e volta para tela de personagens
-function terminarCombate() {
-  if (papel === "jogador") {
-    // Atualiza os personagens do jogador com os dados da mesa
-    personagensMesa.forEach(pMesa => {
-      if (pMesa.nick === nick) {
-        const listaJogador = personagensPorNick[nick];
-        const personagemOriginal = listaJogador.find(p => p.nomePersonagem === pMesa.nomePersonagem);
-        if (personagemOriginal) {
-          personagemOriginal.hp = pMesa.hp;
-          personagemOriginal.sanidade = pMesa.sanidade;
-          if (pMesa.extra) {
-            personagemOriginal.extra = {...pMesa.extra};
-          } else {
-            personagemOriginal.extra = null;
-          }
-        }
-      }
-    });
-  } else if (papel === "mestre") {
-    // Atualiza NPCs do mestre também
-    personagensMesa.forEach(pMesa => {
-      if (pMesa.nick === "MESTRE") {
-        const listaMestre = personagensPorNick["MESTRE"] || [];
-        const npcOriginal = listaMestre.find(p => p.nomePersonagem === pMesa.nomePersonagem);
-        if (npcOriginal) {
-          npcOriginal.hp = pMesa.hp;
-          npcOriginal.sanidade = pMesa.sanidade;
-          if (pMesa.extra) {
-            npcOriginal.extra = {...pMesa.extra};
-          } else {
-            npcOriginal.extra = null;
-          }
-        }
-      }
-    });
-  }
-
-  ordemTurnos = [];
-  turnoAtual = 0;
-  rodada = 1;
-  historico = [];
-  // Mantém NPCs do mestre na mesa para próxima rodada (ou pode esvaziar se preferir)
-  personagensMesa = personagensMesa.filter(p => p.nick === "MESTRE");
-
-  document.getElementById("tela-combate").classList.add("escondido");
-  document.getElementById("tela-personagens").classList.remove("escondido");
-
-  if (papel === "mestre") {
-    atualizarListaMesa();
-  } else {
-    atualizarListaPersonagensUsuario();
-    mostrarPainelPersonagem(null);
-  }
-}
-
-// Sair da mesa volta para tela inicial
-function sairDaMesa() {
-  if (!confirm("Deseja sair da mesa? Você perderá os dados não salvos.")) return;
-
-  papel = null;
-  nick = null;
-  personagemSelecionadoIndex = null;
-  personagensMesa = [];
-  ordemTurnos = [];
-  turnoAtual = 0;
-  rodada = 1;
-  historico = [];
-
-  personagensPorNick = {};
-
-  document.getElementById("tela-combate").classList.add("escondido");
-  document.getElementById("tela-personagens").classList.add("escondido");
-  document.getElementById("tela-inicial").classList.remove("escondido");
-}
-
-// *** CORREÇÃO PARA BOTÃO COMEÇAR COMBATE ***
-document.getElementById("btn-comecar-combate")?.addEventListener("click", iniciarCombate);
+});

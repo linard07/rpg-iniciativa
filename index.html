@@ -4,140 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>RPG Iniciativa</title>
-<style>
-  body {
-    font-family: sans-serif;
-    background-color: #121212;
-    color: white;
-    text-align: center;
-    padding: 20px;
-    margin: 0;
-  }
-  input, button, select {
-    margin: 5px;
-    padding: 8px;
-    font-size: 14px;
-    background-color: #1c1c1c;
-    border: 1px solid #333;
-    color: white;
-    border-radius: 4px;
-  }
-  button {
-    cursor: pointer;
-    background-color: #333;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 16px;
-    transition: background-color 0.3s ease;
-  }
-  button:hover {
-    background-color: #444;
-  }
-  .tela {
-    margin-top: 20px;
-  }
-  .escondido {
-    display: none;
-  }
-  img.avatar {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 2px solid white;
-    vertical-align: middle;
-    margin-right: 8px;
-  }
-  .personagem-card {
-    margin: 5px auto;
-    background-color: #222;
-    padding: 10px;
-    border-radius: 6px;
-    text-align: left;
-    max-width: 400px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .personagem-info {
-    flex-grow: 1;
-  }
-  #ordem-turnos {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin: 20px 0;
-  }
-  .turno-ativo {
-    border: 3px solid #ffd700;
-    padding: 10px;
-    border-radius: 10px;
-    background-color: rgba(255, 215, 0, 0.2);
-  }
-  #vez-jogador {
-    background-color: #3a3;
-    color: black;
-    padding: 10px;
-    font-weight: bold;
-    margin: 10px 0;
-    border-radius: 6px;
-  }
-  #btn-sair {
-    position: fixed;
-    bottom: 15px;
-    right: 15px;
-    background-color: #ff4b4b;
-    border: none;
-    padding: 12px 18px;
-    border-radius: 8px;
-    font-weight: bold;
-    color: white;
-    cursor: pointer;
-    z-index: 1000;
-    box-shadow: 0 0 8px rgba(255, 75, 75, 0.7);
-    transition: background-color 0.3s ease;
-  }
-  #btn-sair:hover {
-    background-color: #e04343;
-  }
-  label {
-    font-weight: bold;
-    display: block;
-    margin-top: 10px;
-    margin-bottom: 4px;
-    text-align: left;
-    max-width: 300px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  #lista-personagens-usuario, #lista-mesa-personagens {
-    max-width: 400px;
-    margin: 10px auto 20px auto;
-    text-align: left;
-  }
-  #historico-turnos {
-    max-width: 500px;
-    margin: 10px auto;
-    padding-left: 20px;
-    text-align: left;
-    list-style-type: decimal;
-  }
-  #historico-turnos li {
-    margin-bottom: 6px;
-  }
-  /* Botões extras do mestre dentro do turno ativo */
-  .personagem-card button {
-    margin-left: 5px;
-    background-color: #555;
-    padding: 4px 8px;
-    font-size: 12px;
-  }
-  .personagem-card button:hover {
-    background-color: #777;
-  }
-</style>
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
@@ -183,15 +50,12 @@
     <label for="input-imagem-personagem">Imagem (opcional):</label>
     <input type="file" id="input-imagem-personagem" accept="image/*" />
 
-    <button onclick="adicionarPersonagem()">Adicionar personagem</button>
+    <button id="btn-comecar-combate" style="margin-top: 20px;">Iniciar Combate</button>
 
     <h3>Painel do personagem selecionado</h3>
     <div id="painel-jogador">
       <p>Nenhum personagem selecionado.</p>
     </div>
-
-    <!-- Botão para iniciar combate para jogador -->
-    <button id="btn-comecar-combate" style="margin-top: 20px;">Iniciar Combate</button>
   </div>
 
   <!-- Controle do Mestre -->
@@ -217,7 +81,6 @@
 
     <button onclick="adicionarNPC()">Adicionar NPC</button>
 
-    <!-- Botão do mestre com id para o JS -->
     <button id="btn-comecar-combate" style="margin-top: 20px;">Iniciar Combate</button>
   </div>
 
@@ -242,17 +105,8 @@
   <button onclick="terminarCombate()">Terminar combate</button>
 </div>
 
-<script src="script.js"></script>
-
-<script>
-  // Evento para o botão "Iniciar Combate" funcionar tanto para mestre quanto para jogador,
-  // já que ambos têm o id btn-comecar-combate
-  // Precisamos colocar o event listener em ambos os botões.
-
-  document.querySelectorAll("#btn-comecar-combate").forEach(botao => {
-    botao.addEventListener("click", iniciarCombate);
-  });
-</script>
+<!-- Importa o JS como módulo para usar Firebase -->
+<script type="module" src="script.js"></script>
 
 </body>
 </html>
