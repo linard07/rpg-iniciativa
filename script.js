@@ -1,6 +1,8 @@
 // Import Firebase pelo CDN (modular SDK 9)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc, query, where, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { 
+  getFirestore, collection, doc, addDoc, onSnapshot, query, where, deleteDoc 
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 // CONFIGURAÇÃO FIREBASE - substitua pelos seus dados do console Firebase
 const firebaseConfig = {
@@ -81,8 +83,6 @@ window.escolherPapelENick = async function() {
     escutarPersonagensMesa();
   }
 };
-
-// ======= FUNÇÕES FIRESTORE =======
 
 // Coleção personagens
 const personagensCol = collection(db, 'personagens');
@@ -200,12 +200,38 @@ function renderizarPersonagensMesa() {
   });
 }
 
-// Função para jogador criar personagem pelo formulário (controle jogador)
-document.getElementById('input-nome-personagem').closest('div').querySelector('button')?.addEventListener('click', () => {});
+// Criar personagem do jogador ao clicar no botão “Adicionar novo personagem”
+// Para isso vamos criar um botão novo no HTML e adicionar listener aqui.
+// Como não tem no HTML um botão para criar personagem, vou criar no JS:
 
-// Como você não pediu, vou ativar botão para criar personagem:
+const btnCriarPersonagem = document.createElement('button');
+btnCriarPersonagem.textContent = 'Adicionar personagem';
+btnCriarPersonagem.style.marginTop = '10px';
+document.getElementById('input-nome-personagem').parentNode.appendChild(btnCriarPersonagem);
 
-// O botão de criar personagem do jogador (pode criar uma função para chamar)
+btnCriarPersonagem.addEventListener('click', async () => {
+  const nome = document.getElementById('input-nome-personagem').value.trim();
+  const hp = document.getElementById('input-hp').value;
+  const sanidade = document.getElementById('input-sanidade').value;
+  const extraLabel = document.getElementById('input-extra-label').value;
+  const extraValue = document.getElementById('input-extra-value').value;
+
+  if (!nome) {
+    alert('Digite o nome do personagem');
+    return;
+  }
+
+  await criarPersonagemUsuario(nome, hp, sanidade, extraLabel, extraValue);
+
+  // Limpar inputs
+  document.getElementById('input-nome-personagem').value = '';
+  document.getElementById('input-hp').value = '';
+  document.getElementById('input-sanidade').value = '';
+  document.getElementById('input-extra-label').value = '';
+  document.getElementById('input-extra-value').value = '';
+});
+
+// Botões iniciar combate
 btnComecarCombateJogador.addEventListener('click', () => {
   if (personagensUsuario.length === 0) {
     alert('Crie pelo menos um personagem antes de iniciar o combate.');
@@ -231,7 +257,7 @@ function iniciarCombate() {
   rodadaAtual = 1;
   contadorRodadas.textContent = rodadaAtual;
 
-  // Ordem dos turnos pode ser definida aqui - por enquanto ordem do array
+  // Ordenar personagens pela iniciativa (maior para menor)
   personagensMesa = personagensMesa.sort((a,b) => b.ordemIniciativa - a.ordemIniciativa);
 
   atualizarOrdemTurnos();
@@ -256,6 +282,7 @@ function atualizarOrdemTurnos() {
 // Mostrar informações do turno atual
 function mostrarTurnoAtual() {
   const personagem = personagensMesa[turnoAtualIndex];
+  // Exibir painel "Sua vez" apenas se o personagem da vez for do jogador logado
   vezJogador.classList.toggle('escondido', personagem.proprietario !== usuario.nick);
 }
 
@@ -290,7 +317,6 @@ window.terminarCombate = function() {
   emCombate = false;
   telaCombate.classList.add('escondido');
   telaPersonagens.classList.remove('escondido');
-  // Atualiza listas etc se precisar
 };
 
 // Sair da mesa (voltar à tela inicial)
@@ -307,21 +333,3 @@ window.sairDaMesa = function() {
     controleMestre.classList.add('escondido');
   }
 };
-
-// Criação manual de personagem jogador (exemplo simples - você pode melhorar a UI)
-document.getElementById('input-nome-personagem').addEventListener('change', async () => {
-  const nome = document.getElementById('input-nome-personagem').value.trim();
-  const hp = document.getElementById('input-hp').value;
-  const sanidade = document.getElementById('input-sanidade').value;
-  const extraLabel = document.getElementById('input-extra-label').value;
-  const extraValue = document.getElementById('input-extra-value').value;
-
-  if (nome) {
-    await criarPersonagemUsuario(nome, hp, sanidade, extraLabel, extraValue);
-    document.getElementById('input-nome-personagem').value = '';
-    document.getElementById('input-hp').value = '';
-    document.getElementById('input-sanidade').value = '';
-    document.getElementById('input-extra-label').value = '';
-    document.getElementById('input-extra-value').value = '';
-  }
-});
