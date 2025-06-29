@@ -72,7 +72,16 @@ function escolherPapelENick() {
 }
 
 function adicionarPersonagem() {
+  if (!nick) {
+    alert("Erro: você precisa escolher seu nick primeiro na tela inicial.");
+    return;
+  }
+
+  if (!personagensPorNick[nick]) personagensPorNick[nick] = [];
+
   const nome = document.getElementById("input-nome-personagem").value.trim();
+  if (!nome) return alert("Nome obrigatório.");
+
   if (!nome) return alert("Nome obrigatório.");
   const hp = parseInt(document.getElementById("input-hp").value) || 100;
   const san = parseInt(document.getElementById("input-sanidade").value) || 100;
@@ -478,8 +487,11 @@ function escutarNPCsNoFirebase() {
 }
 
 function salvarPersonagensNoFirebase() {
-  db.ref('personagens/' + nick).set(personagensPorNick[nick] || []);
+  const atual = {};
+  atual[nick] = personagensPorNick[nick] || [];
+  db.ref('personagens').update(atual);
 }
+
 
 function salvarNPCsNoFirebase() {
   const npcs = personagensMesa.filter(p => p.nick === "MESTRE").map(p => {
