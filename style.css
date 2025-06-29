@@ -1,125 +1,145 @@
+/* === BASE === */
 body {
-  background-color: #121212;
-  color: #f0f0f0;
   font-family: Arial, sans-serif;
+  background-color: #121212;
+  color: #fff;
   margin: 0;
   padding: 20px;
 }
 
 h2, h3 {
-  color: #ffffff;
-  margin-top: 1.2em;
+  color: #ffcc00;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="file"],
-button {
-  display: block;
-  margin: 5px 0 10px 0;
-  padding: 8px;
-  font-size: 1em;
-  border: none;
+input, button {
+  margin: 5px;
+  padding: 6px;
   border-radius: 4px;
+  border: none;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="file"] {
-  width: 100%;
-  background-color: #1e1e1e;
-  color: #ffffff;
+input[type="text"], input[type="number"], input[type="file"] {
+  width: 200px;
+  background: #2c2c2c;
+  color: #fff;
 }
 
 button {
-  background-color: #333;
-  color: #ffffff;
+  background-color: #ffcc00;
+  color: #000;
   cursor: pointer;
-  transition: background-color 0.2s;
+  font-weight: bold;
 }
 
 button:hover {
-  background-color: #555;
+  background-color: #e6b800;
 }
 
+/* === ESTRUTURA DE TELAS === */
 .escondido {
   display: none;
 }
 
+#tela-inicial, #tela-personagens, #tela-combate {
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+  background: #1e1e1e;
+  border-radius: 8px;
+  box-shadow: 0 0 10px #000;
+  margin-bottom: 40px;
+}
+
+/* === LISTAS DE PERSONAGENS === */
 .personagem-card {
-  background-color: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 6px;
-  padding: 10px;
-  margin-bottom: 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  background: #2a2a2a;
+  padding: 10px;
+  margin: 10px 0;
+  border-left: 4px solid #ffcc00;
+  border-radius: 5px;
+}
+
+.personagem-card .avatar {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 5px;
+  margin-right: 10px;
 }
 
 .personagem-info {
   flex-grow: 1;
+  padding: 0 10px;
 }
 
-.avatar {
-  width: 64px;
-  height: 64px;
-  object-fit: cover;
-  border-radius: 50%;
-  border: 2px solid #444;
+/* === TURNO ATIVO === */
+.turno-ativo {
+  border-left: 4px solid #00ffcc;
+  background-color: #333333;
 }
 
+/* === BUFFS === */
 .buffs-container {
   margin-top: 5px;
 }
 
 .buff {
-  background-color: #444;
+  display: inline-block;
+  background-color: #0099ff;
   color: #fff;
+  font-size: 12px;
   padding: 2px 6px;
-  margin-right: 4px;
   border-radius: 4px;
-  font-size: 0.8em;
+  margin-right: 4px;
 }
 
-#ordem-turnos {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.turno-ativo {
-  border-left: 4px solid #00ff99;
-  background-color: #1c1c1c;
-}
-
-#painel-jogador input[type="number"] {
-  width: 100px;
-  background-color: #222;
-  color: #fff;
-  margin: 4px 0;
-}
-
+/* === PAINEL DO JOGADOR === */
 #painel-jogador {
+  background: #222;
+  padding: 10px;
+  border-radius: 5px;
   margin-top: 10px;
 }
 
-ul#historico-turnos {
-  list-style: decimal inside;
-  padding-left: 0;
+#painel-jogador img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 5px;
+  margin-bottom: 10px;
 }
 
-@media screen and (max-width: 600px) {
+/* === HISTÓRICO DE TURNOS === */
+#historico-turnos {
+  list-style: none;
+  padding: 0;
+}
+
+#historico-turnos li {
+  background: #2b2b2b;
+  margin: 4px 0;
+  padding: 6px 10px;
+  border-left: 3px solid #555;
+  border-radius: 4px;
+}
+
+/* === RESPONSIVO BÁSICO === */
+@media (max-width: 600px) {
   .personagem-card {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  input[type="text"],
-  input[type="number"],
-  input[type="file"],
-  button {
+  input[type="text"], input[type="number"], input[type="file"] {
     width: 100%;
+  }
+
+  .personagem-card .avatar {
+    width: 100%;
+    height: auto;
+    margin-bottom: 10px;
   }
 }
